@@ -6,7 +6,7 @@ const publications = [
       'ASCIIBench: Evaluating Language-Model-Based Understanding of Visually-Oriented Text',
     authors:
       'Kerry Luo, Michael Fu, Joshua Peguero, Husnain Malik, Anvay Patil, Joyce Lin, Megan Van Overborg, Ryan Sarmiento, Kevin Zhu',
-    venue: 'NeurIPS 2025 Workshops on LLM Evaluation & Multimodal Algorithmic Reasoning',
+    venues: ['NeurIPS 2025 LLM-eval & MAR workshops'],
     url: 'https://arxiv.org/abs/2512.04125',
   },
   {
@@ -14,7 +14,7 @@ const publications = [
       'From Personas to Plot: Character-Grounded Multi-Agent Story Generation for Long-Form Narratives',
     authors:
       'Aayush Aluru, Chloe Ho, Muhammad Hammouri, Kerry Luo, Myra Malik, Ryan Lagasse, Arjun Bahuguna, Vasu Sharma',
-    venue: 'COLM 2026 WAB & LLA; ICML 2026 WiML Workshops',
+    venues: ['COLM 2026 WAB & LLA workshops', 'ICML 2026 WiML workshops'],
     url: 'https://arxiv.org/abs/2607.00918',
   },
 ]
@@ -35,7 +35,11 @@ function Publications() {
                   </a>
                 </h4>
                 <p className="authors">{pub.authors}</p>
-                <span className="label">{pub.venue}</span>
+                {pub.venues.map((venue) => (
+                  <div key={venue} className="label">
+                    {venue}
+                  </div>
+                ))}
               </div>
             </li>
           ))}

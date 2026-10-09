@@ -1,5 +1,5 @@
 type Props = {
-  label: string
+  label?: string
   title: string
   accent?: string
 }
@@ -7,11 +7,10 @@ type Props = {
 function SectionHead({ label, title, accent }: Props) {
   return (
     <div className="section-head">
-      <p className="label">{label}</p>
+      {label && <p className="label">{label}</p>}
       <h2>
         {title} {accent && <em>{accent}</em>}
       </h2>
-      <div className="divider" />
     </div>
   )
 }

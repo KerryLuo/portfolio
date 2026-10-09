@@ -52,7 +52,7 @@ function Projects() {
   return (
     <section id="projects">
       <div className="container">
-        <SectionHead label="Selected Work" title="Projects" />
+        <SectionHead title="Projects" />
 
         {years.map((year) => {
           const items = projects.filter((p) => p.year === year)

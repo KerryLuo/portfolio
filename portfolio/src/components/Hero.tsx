@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react'
+import EmailButton from './EmailButton'
 
 function IconLink({
   href,
@@ -78,8 +79,8 @@ function Hero() {
       <h1 ref={nameRef}>Kerry Luo</h1>
       <div className="divider" />
       <p className="intro" ref={introRef}>
-        Computer science at the University of Maryland. I work on evaluation
-        and safety for AI systems that are powerful but hard to trust.
+        Computer science student at the University of Maryland with research
+        experience in evaluation and safety for AI systems
       </p>
       <div className="actions">
         <IconLink href="https://github.com/KerryLuo" label="GitHub">
@@ -98,25 +99,7 @@ function Hero() {
             />
           </svg>
         </IconLink>
-        <IconLink href="mailto:kerryluo1@gmail.com" label="Email">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinejoin="round"
-              d="M3.5 6.5h17v11h-17z"
-            />
-            <path
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m3.5 6.5 8.5 7 8.5-7"
-            />
-          </svg>
-        </IconLink>
+        <EmailButton />
       </div>
     </section>
   )

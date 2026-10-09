@@ -1,54 +1,114 @@
-const roles = [
+import type { IconType } from 'react-icons'
+import {
+  SiClaude,
+  SiCplusplus,
+  SiDocker,
+  SiFastapi,
+  SiFlask,
+  SiGit,
+  SiHtml5,
+  SiJavascript,
+  SiLinux,
+  SiNextdotjs,
+  SiNodedotjs,
+  SiNumpy,
+  SiPandas,
+  SiPostgresql,
+  SiPython,
+  SiPytorch,
+  SiReact,
+  SiRos,
+  SiScikitlearn,
+  SiTailwindcss,
+  SiTypescript,
+} from 'react-icons/si'
+import { FaJava } from 'react-icons/fa'
+import { TbBrandOpenai, TbCar, TbChartLine } from 'react-icons/tb'
+
+type Skill = { name: string; icon: IconType }
+
+const skills: { label: string; items: Skill[] }[] = [
   {
-    title: 'Research Intern — North Carolina State University',
-    dates: 'June 2025 – Present',
+    label: 'Languages',
+    items: [
+      { name: 'Python', icon: SiPython },
+      { name: 'C++', icon: SiCplusplus },
+      { name: 'TypeScript', icon: SiTypescript },
+      { name: 'JavaScript', icon: SiJavascript },
+      { name: 'Java', icon: FaJava },
+      { name: 'HTML/CSS', icon: SiHtml5 },
+    ],
   },
   {
-    title: 'AI Research Intern — Pocket FM',
-    dates: 'Feb 2026 – May 2026',
+    label: 'Frameworks',
+    items: [
+      { name: 'React', icon: SiReact },
+      { name: 'Next.js', icon: SiNextdotjs },
+      { name: 'Node.js', icon: SiNodedotjs },
+      { name: 'Tailwind CSS', icon: SiTailwindcss },
+      { name: 'FastAPI', icon: SiFastapi },
+      { name: 'Flask', icon: SiFlask },
+    ],
   },
   {
-    title: 'Machine Learning Researcher — Algoverse AI',
-    dates: 'Aug 2022 – Sep 2025',
+    label: 'ML & Data',
+    items: [
+      { name: 'PyTorch', icon: SiPytorch },
+      { name: 'scikit-learn', icon: SiScikitlearn },
+      { name: 'NumPy', icon: SiNumpy },
+      { name: 'Pandas', icon: SiPandas },
+      { name: 'PostgreSQL', icon: SiPostgresql },
+    ],
+  },
+  {
+    label: 'Tools & Infra',
+    items: [
+      { name: 'Git', icon: SiGit },
+      { name: 'Docker', icon: SiDocker },
+      { name: 'Linux', icon: SiLinux },
+      { name: 'ROS2', icon: SiRos },
+      { name: 'MATLAB', icon: TbChartLine },
+      { name: 'CARLA', icon: TbCar },
+      { name: 'Claude', icon: SiClaude },
+      { name: 'Codex', icon: TbBrandOpenai },
+    ],
   },
 ]
 
 function About() {
   return (
-    <section id="about">
-      <div className="container about">
-        <div className="portrait">
-          <span className="label">Portrait</span>
+    <section id="about" className="about-page">
+      <div className="container">
+        <div className="about">
+          <div className="portrait">
+            <span className="label">Portrait</span>
+          </div>
+
+          <div>
+            <h2>About Me</h2>
+            <p className="bio">
+              I am a computer science student at the University of Maryland. My
+              research focuses on evaluating and making AI systems more
+              reliable: multimodal benchmarks, long-form generation, and
+              real-time safety for learned controllers.
+            </p>
+          </div>
         </div>
 
-        <div>
-          <h2>Kerry Luo</h2>
-          <div className="divider" />
-          <p className="bio">
-            I am a computer science student at the University of Maryland,
-            expected to graduate in May 2030. I previously studied at the North
-            Carolina School of Science and Mathematics. My research focuses on
-            evaluating and making AI systems more reliable: multimodal
-            benchmarks, long-form generation, and real-time safety for learned
-            controllers.
-          </p>
-
-          <h3>Past Roles</h3>
-          <ol className="roles">
-            {roles.map((role, i) => (
-              <li key={role.title}>
-                <span className="label">{String(i + 1).padStart(2, '0')}</span>
-                <div>
-                  <div>{role.title}</div>
-                  <div className="label">{role.dates}</div>
-                </div>
-              </li>
-            ))}
-          </ol>
-
-          <a href="#projects" className="btn">
-            View Projects
-          </a>
+        <div className="skills">
+          {skills.map((group) => (
+            <div key={group.label} className="skill-col">
+              <span className="label">{group.label}</span>
+              <ul>
+                {group.items.map(({ name, icon: Icon }) => (
+                  <li key={name} className="skill">
+                    <Icon aria-hidden="true" />
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </div>
     </section>
