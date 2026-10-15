@@ -58,7 +58,7 @@ float pattern(vec2 p, float t) {
     fbm(p + 1.4 * q + vec2(1.7, 9.2) + t),
     fbm(p + 1.4 * q + vec2(8.3, 2.8) - t * 0.8)
   );
-  return smoothstep(0.32, 0.76, fbm(p + 1.4 * r));
+  return smoothstep(0.4, 0.8, fbm(p + 1.4 * r));
 }
 
 void main() {
@@ -68,18 +68,18 @@ void main() {
   float light = pattern(p, t);
 
   // Keep the screen balanced: look at the area around this point. Deep inside
-  // a large dark region a soft light blob grows; a region that's lit almost
-  // everywhere fades down.
+  // a large dark region a soft light blob grows; deep inside a large lit
+  // region a dark pocket opens up, so dark spots keep appearing.
   float around = light;
   for (int i = 0; i < 8; i++) {
     float a = float(i) * 0.7854;
     around += pattern(p + vec2(cos(a), sin(a)) * 0.45, t);
   }
   around /= 9.0;
-  float tooDark = 1.0 - smoothstep(0.02, 0.13, around);
-  float tooLight = smoothstep(0.45, 0.7, around);
-  light = max(light, tooDark * 0.75);
-  light *= 1.0 - tooLight * 0.5;
+  float tooDark = 1.0 - smoothstep(0.0, 0.05, around);
+  float tooLight = smoothstep(0.3, 0.55, around);
+  light = max(light, tooDark * 0.7);
+  light *= 1.0 - tooLight * 0.85;
 
   vec3 base = vec3(0.051, 0.071, 0.063);
   vec3 green = vec3(0.12, 0.25, 0.19);
@@ -93,14 +93,14 @@ const GRID_W = 64
 const GRID_H = 40
 const RADIUS = 0.14 // size of the mouse's push, as a fraction of screen height
 const GLIDE = 0.975 // how long pushed light keeps travelling after the mouse stops
-const PUSH = 1.5 * (1 - GLIDE) // total travel is about 1.5x the mouse's movement
+const PUSH = 2.8 * (1 - GLIDE) // total travel is about 2.8x the mouse's movement
 const SPREAD = 0.01 // how much a push slowly spreads into its surroundings
 const LIMIT = 6 // cap on how far any spot can be pushed in total
 const RENDER_SCALE = 0.25 // the canvas is heavily blurred, so render it small
 const BLUR = 64 // px
 // The canvas extends past each screen edge so the blur doesn't darken the borders.
 const BLEED = Math.round(BLUR * 2.5)
-const FADE_IN_MS = 4000 // black at first, then the green fades in over this long
+const FADE_IN_MS = 12000 // black at first, then the green fades in over this long
 
 function compile(gl: WebGL2RenderingContext, type: number, src: string) {
   const shader = gl.createShader(type)
