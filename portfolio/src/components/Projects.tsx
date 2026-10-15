@@ -24,7 +24,7 @@ const projects: Project[] = [
     name: 'FastSimplex',
     badge: 'NC State',
     description:
-      'Real-time safety stack around black-box RL controllers for F1TENTH. Early-termination cut per-cycle compute by 56% and eliminated crashes on an undertrained policy while keeping 99.8% of baseline lap speed.',
+      'Real-time safety architecture integrating RL controllers into F1TENTH autonomous racing cars with verifiable safety guarantees, cut per-cycle compute by 56%.',
     tags: ['ROS', 'RL', 'Real-time systems'],
   },
   {
@@ -43,6 +43,7 @@ const projects: Project[] = [
     description:
       'Simplified AlphaFold-inspired model for protein backbone prediction using RCSB PDB/FASTA data, one-hot encoding, multi-head attention, RMSD evaluation, and 3D visualization of Cα traces.',
     tags: ['TensorFlow', 'Keras', 'NumPy'],
+    url: 'https://github.com/KerryLuo/protein-structure-prediction',
   },
 ]
 
@@ -54,15 +55,13 @@ function Projects() {
       <div className="container">
         <SectionHead title="Projects" />
 
+        <div className="years">
         {years.map((year) => {
           const items = projects.filter((p) => p.year === year)
           return (
             <div key={year}>
               <div className="year">
                 <h3>{year}</h3>
-                <span className="label">
-                  {items.length} {items.length === 1 ? 'Project' : 'Projects'}
-                </span>
               </div>
               <div className="grid">
                 {items.map((project) => (
@@ -95,6 +94,7 @@ function Projects() {
             </div>
           )
         })}
+        </div>
       </div>
     </section>
   )

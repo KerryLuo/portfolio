@@ -23,11 +23,10 @@ function Publications() {
   return (
     <section id="publications">
       <div className="container">
-        <SectionHead label="Research · Writing" title="Publications" />
+        <SectionHead title="Publications" />
         <ol className="pubs">
-          {publications.map((pub, i) => (
+          {publications.map((pub) => (
             <li key={pub.title}>
-              <span className="label">{String(i + 1).padStart(2, '0')}</span>
               <div>
                 <h4>
                   <a href={pub.url} target="_blank" rel="noopener noreferrer">

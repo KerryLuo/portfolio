@@ -1,3 +1,4 @@
+import Background from './components/Background'
 import Nav from './components/Nav'
 import Hero from './components/Hero'
 import About from './components/About'
@@ -8,6 +9,7 @@ import Publications from './components/Publications'
 function App() {
   return (
     <>
+      <Background />
       <Nav />
       <main>
         <Hero />
