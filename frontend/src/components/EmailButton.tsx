@@ -1,12 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-
-// The address is stored reversed and only assembled after a click, so it never
-// appears in the page source, the built bundle, or the DOM until requested.
-const USER = '1oulyrrek'
-const DOMAIN = 'moc.liamg'
-
-const reverse = (s: string) => [...s].reverse().join('')
+import { maskedEmail } from '../lib/email'
 
 type Props = {
   variant?: 'icon' | 'pill'
@@ -90,7 +84,7 @@ function EmailButton({ variant = 'icon' }: Props) {
               </button>
               <p className="label">Email</p>
               <p className="modal-email">
-                {reverse(USER)} [at] {reverse(DOMAIN)}
+                {maskedEmail()}
               </p>
             </div>
           </div>,

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react'
 import EmailButton from './EmailButton'
+import Heatmap from './Heatmap'
 
 function IconLink({
   href,
@@ -101,6 +102,7 @@ function Hero() {
         </IconLink>
         <EmailButton />
       </div>
+      <Heatmap />
     </section>
   )
 }

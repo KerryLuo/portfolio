@@ -7,4 +7,8 @@ export default defineConfig(({ command }) => ({
   // GitHub Pages serves this repo at /portfolio/, so built asset URLs need that
   // prefix. Dev keeps the root path.
   base: command === 'build' ? '/portfolio/' : '/',
+  // In dev, forward API calls to the backend (see ../backend).
+  server: {
+    proxy: { '/api': 'http://localhost:8787' },
+  },
 }))

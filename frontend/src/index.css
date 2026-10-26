@@ -107,19 +107,6 @@ section > .container {
   position: relative;
 }
 
-.divider::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: -3px;
-  width: 7px;
-  height: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  border-radius: 50%;
-  background: var(--bg);
-  transform: translateX(-50%);
-}
-
 .btn {
   display: inline-block;
   padding: 10px 22px;
@@ -255,7 +242,7 @@ button.btn {
 }
 
 .hero h1 {
-  font-size: clamp(50px, 9vw, 96px);
+  font-size: clamp(56px, 10vw, 112px);
   letter-spacing: -0.025em;
   line-height: 1;
   margin-top: 24px;
@@ -278,7 +265,7 @@ button.btn {
 .hero .actions {
   display: flex;
   gap: 20px;
-  margin-top: 44px;
+  margin-top: 28px;
 }
 
 .icon-link {
@@ -517,6 +504,10 @@ button.icon-link {
   font-size: 36px;
 }
 
+#projects .section-head {
+  margin-bottom: 8px;
+}
+
 .years > div:first-child .year {
   margin-top: 0;
 }
@@ -550,20 +541,56 @@ button.icon-link {
 }
 
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   padding: 28px;
   background: var(--surface);
   border: 1px solid var(--border);
-  transition: border-color 0.2s;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
 }
 
-.card:hover {
+.card:hover,
+.card:focus-visible {
   border-color: rgba(255, 255, 255, 0.25);
+  transform: scale(1.03);
+}
+
+.card:focus-visible {
+  outline: none;
+}
+
+.card-links {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+}
+
+.card-links a {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  opacity: 1;
+  color: #fff;
+  transition: background 0.2s;
+}
+
+.card-links a:hover,
+.card-links a:focus-visible {
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.card .label {
+  padding-right: 96px;
 }
 
 .card .label {
   display: block;
+  min-height: 1.3em;
   line-height: 1.3;
 }
 
@@ -574,36 +601,34 @@ button.icon-link {
   margin: 10px 0 8px;
 }
 
-.card h4 a,
 .pubs h4 a {
   color: inherit;
   text-decoration: none;
 }
 
-/* Stretch the title link over the whole card / entry so any click follows it */
-.card,
+/* Stretch the title link over the whole entry so any click follows it */
 .pubs li {
   position: relative;
 }
 
-.card h4 a::after,
 .pubs h4 a::after {
   content: '';
   position: absolute;
   inset: 0;
 }
 
-.card:has(h4 a),
 .pubs li:has(h4 a) {
   cursor: pointer;
 }
 
-.card:hover h4 a,
-.pubs li:hover h4 a,
-.card h4 a:focus-visible,
-.pubs h4 a:focus-visible {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.pubs li > div {
+  transform-origin: left center;
+  transition: transform 0.2s;
+}
+
+.pubs li:hover > div,
+.pubs li:has(a:focus-visible) > div {
+  transform: scale(1.02);
 }
 
 .card p {
@@ -700,6 +725,48 @@ button.icon-link {
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* Project popup: the body scrolls, the close button stays put */
+.modal.project-modal {
+  align-items: stretch;
+  gap: 0;
+  max-width: 720px;
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+}
+
+.project-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 44px 36px;
+  overflow-y: auto;
+}
+
+.project-modal-body .label {
+  padding-right: 40px;
+}
+
+.project-modal-body h4 {
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.project-modal-body p {
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.project-modal-body img {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
+}
+
 .modal-email {
   font-size: 25px;
   color: var(--text);
@@ -723,4 +790,166 @@ button.icon-link {
     radial-gradient(circle at 80% 60%, rgba(52, 88, 74, 0.4), transparent 50%),
     radial-gradient(circle at 35% 85%, rgba(32, 72, 56, 0.45), transparent 45%),
     var(--bg);
+}
+
+/* Heatmap */
+
+.heatmap-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin-top: 26px;
+  padding: 2px;
+}
+
+.heatmap {
+  display: grid;
+  grid-template-rows: repeat(7, 7px);
+  grid-auto-flow: column;
+  grid-auto-columns: 7px;
+  gap: 2px;
+  width: max-content;
+}
+
+.cell {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.cell.pad {
+  background: none;
+}
+
+.cell.level-1 {
+  background: #1f4d3a;
+}
+
+.cell.level-2 {
+  background: #2f7a58;
+}
+
+.cell.level-3 {
+  background: #46a679;
+}
+
+.cell.level-4 {
+  background: #7bd9a5;
+}
+
+/* Contact form */
+
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: start;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.contact-info p {
+  font-size: 22px;
+  color: var(--muted);
+}
+
+.contact-email {
+  font-size: 28px;
+  color: #fff;
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.contact-main {
+  min-width: 0;
+}
+
+@media (max-width: 800px) {
+  .contact-layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+.contact-form,
+.form-done {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.form-done {
+  align-items: center;
+  text-align: center;
+}
+
+.contact-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+  outline: none;
+  border-color: var(--faint);
+}
+
+.contact-form [aria-invalid='true'] {
+  border-color: #e07a7a;
+}
+
+.contact-form small,
+.form-error {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #e89a9a;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.form-actions .btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Hidden from people and assistive tech; bots tend to fill it in */
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.contact-note {
+  text-align: center;
+  color: var(--muted);
 }

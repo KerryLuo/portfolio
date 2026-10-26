@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import EmailButton from './EmailButton'
 
 const links = ['About', 'Experience', 'Projects', 'Publications']
 
@@ -59,7 +58,9 @@ function Nav() {
               </li>
             ))}
           </ul>
-          <EmailButton variant="pill" />
+          <a href="#contact" className="btn nav-cta" onClick={onNavClick}>
+            Contact Me
+          </a>
         </div>
       </div>
     </nav>
