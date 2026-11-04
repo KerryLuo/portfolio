@@ -4,7 +4,7 @@ from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr, StringConstraints
+from pydantic import BaseModel, EmailStr, Field, StringConstraints
 
 from app.config import settings
 from app.ratelimit import RateLimiter
@@ -22,7 +22,7 @@ class ContactMessage(BaseModel):
     email: EmailStr
     message: Annotated[str, StringConstraints(strip_whitespace=True, min_length=10, max_length=5000)]
     # Honeypot: hidden from people, so only bots fill it in.
-    website: str | None = None
+    website: str | None = Field(default=None, max_length=200)
 
 
 async def send_email(msg: ContactMessage) -> None:
@@ -45,7 +45,16 @@ async def send_email(msg: ContactMessage) -> None:
     res.raise_for_status()
 
 
-@router.post("", dependencies=[Depends(limiter)])
+@router.post(
+    "",
+    dependencies=[Depends(limiter)],
+    responses={
+        400: {"description": "Validation failed; body has per-field messages"},
+        429: {"description": "Rate limited"},
+        502: {"description": "Email provider failed"},
+        503: {"description": "Contact form not configured"},
+    },
+)
 async def submit(msg: ContactMessage) -> dict[str, bool]:
     # Pretend success so bots get no signal that they were caught.
     if msg.website:

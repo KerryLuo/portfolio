@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
-from app.routers import contact, github
+from app.routers import contact, github, projects
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
 
@@ -16,12 +16,13 @@ app = FastAPI(title="Portfolio API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type"],
 )
 
 app.include_router(contact.router)
 app.include_router(github.router)
+app.include_router(projects.router)
 
 
 @app.get("/api/health", tags=["meta"])

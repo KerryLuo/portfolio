@@ -164,7 +164,13 @@ async def fetch_profile_calendar() -> tuple[dict[str, int], int]:
 
 async def build() -> Activity:
     async with httpx.AsyncClient(headers=headers(), timeout=10) as client:
-        events = await fetch_events(client)
+        # Events only feed the "recent" list and the last-resort fallback, so a
+        # rate limit here shouldn't take the whole heatmap down.
+        try:
+            events = await fetch_events(client)
+        except httpx.HTTPError:
+            log.exception("GitHub events failed")
+            events = []
 
         counts = empty_window()
         total = 0

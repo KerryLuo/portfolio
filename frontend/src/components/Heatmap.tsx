@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { api, apiEnabled } from '../lib/api'
+import { api, ApiError, apiEnabled } from '../lib/api'
 
 type Day = { date: string; count: number; level: 0 | 1 | 2 | 3 | 4 }
 
@@ -17,6 +17,7 @@ const formatDate = (iso: string) =>
 
 function Heatmap() {
   const [data, setData] = useState<Activity | null>(null)
+  const [error, setError] = useState('')
   const scroller = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -24,7 +25,10 @@ function Heatmap() {
     const controller = new AbortController()
     api<Activity>('/api/github/activity', { signal: controller.signal })
       .then(setData)
-      .catch(() => {})
+      .catch((err) => {
+        if (controller.signal.aborted) return
+        setError(err instanceof ApiError ? err.message : 'Could not reach the server.')
+      })
     return () => controller.abort()
   }, [])
 
@@ -41,6 +45,7 @@ function Heatmap() {
     return [...Array<null>(pad).fill(null), ...data.days]
   }, [data])
 
+  if (error) return <p className="form-error" role="alert">{error}</p>
   if (!data) return null
 
   return (

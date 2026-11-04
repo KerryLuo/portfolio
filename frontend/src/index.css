@@ -8,6 +8,20 @@
   --serif: 'Fraunces', Georgia, serif;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
   color-scheme: dark;
+  /* Everything but the background renders at 90%, like browser zoom */
+  --zoom: 0.9;
+  /* Projects renders smaller still so two years of rows fit on screen */
+  --projects-zoom: 0.8;
+  --nav-zoom: 0.8;
+}
+
+main,
+.modal {
+  zoom: var(--zoom);
+}
+
+.nav {
+  zoom: var(--nav-zoom);
 }
 
 * {
@@ -68,7 +82,7 @@ html {
 }
 
 section {
-  min-height: 100svh;
+  min-height: calc(100svh / var(--zoom));
   display: flex;
   align-items: center;
   padding: 64px 0 16px;
@@ -224,7 +238,7 @@ button.btn {
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1111px) {
   .nav ul {
     display: none;
   }
@@ -417,7 +431,7 @@ button.icon-link {
   color: var(--muted);
 }
 
-@media (max-height: 720px) {
+@media (max-height: 800px) {
   section {
     padding: 56px 0 8px;
   }
@@ -474,13 +488,13 @@ button.icon-link {
   }
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1111px) {
   .skills {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 889px) {
   .about {
     grid-template-columns: 1fr;
     gap: 32px;
@@ -502,6 +516,16 @@ button.icon-link {
 
 .year h3 {
   font-size: 36px;
+}
+
+/* Zoom multiplies with main's, so divide it out to land on --projects-zoom */
+#projects {
+  zoom: calc(var(--projects-zoom) / var(--zoom));
+  /* The one section taller than the window: you scroll through it, and the
+     bottom padding keeps the last row clear of the next section's separator. */
+  min-height: calc(100svh / var(--projects-zoom) + 160px);
+  align-items: flex-start;
+  padding: 96px 0 120px;
 }
 
 #projects .section-head {
@@ -528,13 +552,13 @@ button.icon-link {
   min-width: 0;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1111px) {
   .grid {
     --per-row: 2;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 711px) {
   .grid {
     --per-row: 1;
   }
@@ -575,12 +599,12 @@ button.icon-link {
   height: 44px;
   opacity: 1;
   color: #fff;
+  border-radius: 50%;
   transition: background 0.2s;
 }
 
 .card-links a:hover,
 .card-links a:focus-visible {
-  border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -730,7 +754,7 @@ button.icon-link {
   align-items: stretch;
   gap: 0;
   max-width: 720px;
-  max-height: calc(100vh - 48px);
+  max-height: calc((100vh - 48px) / var(--zoom));
   padding: 0;
   overflow: hidden;
   text-align: left;
@@ -871,7 +895,7 @@ button.icon-link {
   min-width: 0;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 889px) {
   .contact-layout {
     grid-template-columns: 1fr;
     gap: 32px;
@@ -952,4 +976,23 @@ button.icon-link {
 .contact-note {
   text-align: center;
   color: var(--muted);
+}
+
+/* Projects: add/edit/delete controls */
+.project-toolbar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.card-actions .btn {
+  margin-top: 0;
+  padding: 6px 14px;
+  font-size: 11px;
 }

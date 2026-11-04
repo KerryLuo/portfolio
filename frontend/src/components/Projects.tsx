@@ -1,60 +1,31 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { api, ApiError, apiEnabled } from '../lib/api'
 import SectionHead from './SectionHead'
 
 type Project = {
+  id: number
   year: number
   name: string
-  badge?: string
+  badge: string | null
   description: string
   tags: string[]
-  urls?: string[]
-  images?: string[]
-  details?: string
+  urls: string[]
 }
 
-const projects: Project[] = [
-  {
-    year: 2026,
-    name: 'MAGNET / ATLAS',
-    badge: 'Pocket FM',
-    description:
-      'Multi-agent long-form story generation with character agents, critic revision, and graph-based world-state tracking, plus a knowledge-graph pipeline for hallucination and narrative consistency.',
-    tags: ['LLMs', 'Multi-agent', 'Knowledge graphs'],
-    urls: [
-      'https://github.com/PocketFM-Research',
-      'https://arxiv.org/abs/2607.00918',
-    ],
-  },
-  {
-    year: 2026,
-    name: 'FastSimplex',
-    badge: 'NC State',
-    description:
-      'Real-time safety architecture integrating RL controllers into F1TENTH autonomous racing cars with verifiable safety guarantees, cut per-cycle compute by 56%.',
-    tags: ['ROS', 'RL', 'Real-time systems'],
-  },
-  {
-    year: 2025,
-    name: 'ASCIIBench',
-    badge: 'Algoverse AI',
-    description:
-      'First-author benchmark for whether LLMs and VLMs can generate, classify, and represent ASCII art. Released a 5,315-image dataset, fine-tuned CLIP weights, and evaluation code.',
-    tags: ['Benchmark', 'CLIP', 'Multimodal'],
-    urls: [
-      'https://github.com/ASCIIBench/ASCIIBench',
-      'https://arxiv.org/abs/2512.04125',
-    ],
-  },
-  {
-    year: 2025,
-    name: 'MiniFold',
-    description:
-      'Simplified AlphaFold-inspired model for protein backbone prediction using RCSB PDB/FASTA data, one-hot encoding, multi-head attention, RMSD evaluation, and 3D visualization of Cα traces.',
-    tags: ['TensorFlow', 'Keras', 'NumPy'],
-    urls: ['https://github.com/KerryLuo/protein-structure-prediction'],
-  },
-]
+type Draft = Omit<Project, 'id'>
+
+const emptyDraft: Draft = {
+  year: new Date().getFullYear(),
+  name: '',
+  badge: null,
+  description: '',
+  tags: [],
+  urls: [],
+}
+
+const splitList = (value: string, sep: RegExp) =>
+  value.split(sep).map((v) => v.trim()).filter(Boolean)
 
 function GitHubIcon() {
   return (
@@ -135,10 +106,6 @@ function ProjectModal({
               </span>
             ))}
           </div>
-          {project.images?.map((src) => (
-            <img key={src} src={src} alt="" />
-          ))}
-          {project.details && <p>{project.details}</p>}
         </div>
       </div>
     </div>,
@@ -146,14 +113,184 @@ function ProjectModal({
   )
 }
 
+function ProjectForm({
+  initial,
+  onSave,
+  onClose,
+}: {
+  initial: Project | null
+  onSave: (draft: Draft) => Promise<void>
+  onClose: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [fields, setFields] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const v = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>
+    setSaving(true)
+    setError('')
+    setFields({})
+    try {
+      await onSave({
+        year: Number(v.year),
+        name: v.name,
+        badge: v.badge.trim() || null,
+        description: v.description,
+        tags: splitList(v.tags, /,/),
+        urls: splitList(v.urls, /\s+/),
+      })
+    } catch (err) {
+      setSaving(false)
+      if (err instanceof ApiError) {
+        setError(err.message)
+        setFields(err.fields ?? {})
+      } else {
+        setError('Could not reach the server. Please try again later.')
+      }
+    }
+  }
+
+  const d = initial ?? emptyDraft
+  return createPortal(
+    <div className="modal-backdrop" onClick={onClose}>
+      <div
+        className="modal project-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={initial ? 'Edit project' : 'Add project'}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="project-modal-body">
+          <h4>{initial ? 'Edit project' : 'Add project'}</h4>
+          <form className="contact-form" onSubmit={onSubmit} noValidate>
+            <label>
+              <span className="label">Name</span>
+              <input name="name" defaultValue={d.name} maxLength={100} autoFocus aria-invalid={!!fields.name} />
+              {fields.name && <small>{fields.name}</small>}
+            </label>
+            <label>
+              <span className="label">Year</span>
+              <input name="year" type="number" defaultValue={d.year} aria-invalid={!!fields.year} />
+              {fields.year && <small>{fields.year}</small>}
+            </label>
+            <label>
+              <span className="label">Badge (optional)</span>
+              <input name="badge" defaultValue={d.badge ?? ''} maxLength={100} />
+            </label>
+            <label>
+              <span className="label">Description</span>
+              <textarea name="description" rows={4} defaultValue={d.description} maxLength={1000} aria-invalid={!!fields.description} />
+              {fields.description && <small>{fields.description}</small>}
+            </label>
+            <label>
+              <span className="label">Tags (comma separated)</span>
+              <input name="tags" defaultValue={d.tags.join(', ')} />
+            </label>
+            <label>
+              <span className="label">Links (separated by spaces)</span>
+              <input name="urls" defaultValue={d.urls.join(' ')} />
+            </label>
+            <div className="form-actions">
+              <button type="submit" className="btn" disabled={saving}>
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+              <button type="button" className="btn" onClick={onClose}>
+                Cancel
+              </button>
+              {error && (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              )}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+// Editing is a dev-only admin tool for now; the deployed site is read-only.
+const canEdit = import.meta.env.DEV
+
 function Projects() {
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(apiEnabled)
+  const [loadError, setLoadError] = useState('')
   const [selected, setSelected] = useState<Project | null>(null)
+  // `null` = closed, `'new'` = creating, a Project = editing it.
+  const [editing, setEditing] = useState<Project | 'new' | null>(null)
+  const [actionError, setActionError] = useState('')
+
+  useEffect(() => {
+    if (!apiEnabled) return
+    const controller = new AbortController()
+    api<Project[]>('/api/projects', { signal: controller.signal })
+      .then(setProjects)
+      .catch((err) => {
+        if (controller.signal.aborted) return
+        setLoadError(err instanceof ApiError ? err.message : 'Could not reach the server.')
+      })
+      .finally(() => setLoading(false))
+    return () => controller.abort()
+  }, [])
+
+  const save = async (draft: Draft) => {
+    if (editing === 'new') {
+      const created = await api<Project>('/api/projects', { method: 'POST', json: draft })
+      setProjects((all) => [...all, created])
+    } else if (editing) {
+      const updated = await api<Project>(`/api/projects/${editing.id}`, { method: 'PUT', json: draft })
+      setProjects((all) => all.map((p) => (p.id === updated.id ? updated : p)))
+    }
+    setEditing(null)
+  }
+
+  const remove = async (project: Project) => {
+    if (!window.confirm(`Delete "${project.name}"?`)) return
+    setActionError('')
+    try {
+      await api(`/api/projects/${project.id}`, { method: 'DELETE' })
+      setProjects((all) => all.filter((p) => p.id !== project.id))
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Could not reach the server.')
+    }
+  }
+
   const years = [...new Set(projects.map((p) => p.year))].sort((a, b) => b - a)
 
   return (
     <section id="projects">
       <div className="container">
         <SectionHead title="Projects" />
+
+        {canEdit && !loadError && (
+          <div className="project-toolbar">
+            <button type="button" className="btn" onClick={() => setEditing('new')}>
+              Add project
+            </button>
+          </div>
+        )}
+        {loading && <p className="contact-note">Loading projects…</p>}
+        {(loadError || !apiEnabled) && (
+          <p className="form-error" role="alert">
+            {loadError || 'Projects are unavailable right now.'}
+          </p>
+        )}
+        {actionError && (
+          <p className="form-error" role="alert">
+            {actionError}
+          </p>
+        )}
 
         <div className="years">
         {years.map((year) => {
@@ -166,7 +303,7 @@ function Projects() {
               <div className="grid">
                 {items.map((project) => (
                   <article
-                    key={project.name}
+                    key={project.id}
                     className="card"
                     role="button"
                     tabIndex={0}
@@ -178,7 +315,7 @@ function Projects() {
                       }
                     }}
                   >
-                    {project.urls && (
+                    {project.urls.length > 0 && (
                       <div className="card-links">
                         {project.urls.map((url) => (
                           <a
@@ -208,6 +345,30 @@ function Projects() {
                         </span>
                       ))}
                     </div>
+                    {canEdit && (
+                    <div className="card-actions">
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditing(project)
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          remove(project)
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    )}
                   </article>
                 ))}
               </div>
@@ -216,6 +377,13 @@ function Projects() {
         })}
         </div>
       </div>
+      {canEdit && editing && (
+        <ProjectForm
+          initial={editing === 'new' ? null : editing}
+          onSave={save}
+          onClose={() => setEditing(null)}
+        />
+      )}
       {selected && (
         <ProjectModal project={selected} onClose={() => setSelected(null)} />
       )}
