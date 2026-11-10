@@ -113,14 +113,6 @@ section > .container {
   margin-top: 12px;
 }
 
-.divider {
-  width: 120px;
-  height: 1px;
-  margin: 24px auto 0;
-  background: rgba(255, 255, 255, 0.4);
-  position: relative;
-}
-
 .btn {
   display: inline-block;
   padding: 10px 22px;
@@ -263,14 +255,9 @@ button.btn {
   color: #fff;
 }
 
-.hero .divider {
-  margin-top: var(--sep-top, 32px);
-  margin-bottom: var(--sep-bottom, 32px);
-}
-
 .hero .intro {
   max-width: 660px;
-  margin: 0;
+  margin: 28px 0 0;
   font-size: 22px;
   color: var(--muted);
   line-height: 1.45;

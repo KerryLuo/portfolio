@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import EmailButton from './EmailButton'
 import Heatmap from './Heatmap'
 
@@ -25,61 +25,10 @@ function IconLink({
 }
 
 function Hero() {
-  const rootRef = useRef<HTMLElement>(null)
-  const nameRef = useRef<HTMLHeadingElement>(null)
-  const introRef = useRef<HTMLParagraphElement>(null)
-
-  useLayoutEffect(() => {
-    const root = rootRef.current
-    const name = nameRef.current
-    const intro = introRef.current
-    if (!root || !name || !intro) return
-
-    const place = () => {
-      const nameNode = name.firstChild
-      const introNode = intro.firstChild
-      if (!nameNode || !introNode) return
-
-      const yPos = name.textContent?.indexOf('y') ?? -1
-      const yRange = document.createRange()
-      if (yPos >= 0 && nameNode.nodeType === Node.TEXT_NODE) {
-        yRange.setStart(nameNode, yPos)
-        yRange.setEnd(nameNode, yPos + 1)
-      } else {
-        yRange.selectNodeContents(name)
-      }
-
-      const textRange = document.createRange()
-      if (introNode.nodeType === Node.TEXT_NODE) {
-        const value = introNode.textContent ?? ''
-        const start = value.search(/\S/)
-        textRange.setStart(introNode, start < 0 ? 0 : start)
-        textRange.setEnd(introNode, value.length)
-      } else {
-        textRange.selectNodeContents(intro)
-      }
-
-      const yBottom = yRange.getBoundingClientRect().bottom
-      const textTop = textRange.getBoundingClientRect().top
-      const extraBelow = name.getBoundingClientRect().bottom - yBottom
-      const extraAbove = textTop - intro.getBoundingClientRect().top
-      const half = 32
-
-      root.style.setProperty('--sep-top', `${Math.max(0, half - extraBelow)}px`)
-      root.style.setProperty('--sep-bottom', `${Math.max(0, half - extraAbove)}px`)
-    }
-
-    place()
-    void document.fonts.ready.then(place)
-    window.addEventListener('resize', place)
-    return () => window.removeEventListener('resize', place)
-  }, [])
-
   return (
-    <section id="home" className="hero container" ref={rootRef}>
-      <h1 ref={nameRef}>Kerry Luo</h1>
-      <div className="divider" />
-      <p className="intro" ref={introRef}>
+    <section id="home" className="hero container">
+      <h1>Kerry Luo</h1>
+      <p className="intro">
         Computer science student at the University of Maryland with research
         experience in evaluation and safety for AI systems
       </p>
