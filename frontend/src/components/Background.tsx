@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
 
 // Full-screen ASCII background. The light underneath is a flowing green glow:
-// warped noise drifting over time, which the mouse pushes around like stirring
-// water. The screen is split into character cells, and each cell shows the
+// warped noise drifting over time. Moving the mouse adds light along its path,
+// a soft trail that spreads a little and fades within a couple of seconds.
+// The screen is split into character cells, and each cell shows the
 // glyph whose amount of ink matches the light there, from small, sparse marks
 // (. : ~) up to '#'.
 //
@@ -16,7 +17,7 @@ import { useEffect, useRef } from 'react'
 //     glyphs are capped at half brightness, so every word stays legible.
 //
 // Each frame runs these WebGL passes:
-//   field   the light pattern at a coarse resolution, warped by the mouse
+//   field   the light pattern at a coarse resolution, plus the mouse's light
 //   blur ×2 a separable gaussian blur that softens it into a gradient
 //   memory  eases the remembered light toward the current light
 //   ascii   for every screen pixel: find its cell, read the light, memory and
@@ -45,7 +46,7 @@ const FIELD_FRAG = `#version 300 es
 precision highp float;
 uniform float uAspect;
 uniform float uTime;
-uniform sampler2D uDisp;
+uniform sampler2D uGlow; // light the mouse has added
 in vec2 vUv;
 out vec4 outColor;
 ${NOISE}
@@ -84,8 +85,7 @@ float pattern(vec2 p, float t) {
 }
 
 void main() {
-  vec2 uv = vUv - texture(uDisp, vUv).rg;
-  vec2 p = uv * vec2(uAspect, 1.0) * 1.4;
+  vec2 p = vUv * vec2(uAspect, 1.0) * 1.4;
   float t = uTime * 0.09;
   float light = pattern(p, t);
 
@@ -103,7 +103,9 @@ void main() {
   light = max(light, tooDark * 0.7);
   light *= 1.0 - tooLight * 0.85;
 
-  outColor = vec4(light, 0.0, 0.0, 1.0);
+  // The mouse's light rides along in its own channel so the slow fade never
+  // swallows it; it is added on top just before glyphs are picked.
+  outColor = vec4(light, texture(uGlow, vUv).r, 0.0, 1.0);
 }`
 
 const BLUR_FRAG = `#version 300 es
@@ -115,15 +117,15 @@ in vec2 vUv;
 out vec4 outColor;
 void main() {
   int r = int(ceil(uSigma * 2.5));
-  float sum = 0.0;
+  vec2 sum = vec2(0.0);
   float total = 0.0;
   for (int i = -32; i <= 32; i++) {
     if (i < -r || i > r) continue;
     float w = exp(-float(i * i) / (2.0 * uSigma * uSigma));
-    sum += texture(uSrc, vUv + uStep * float(i)).r * w;
+    sum += texture(uSrc, vUv + uStep * float(i)).rg * w;
     total += w;
   }
-  outColor = vec4(sum / total, 0.0, 0.0, 1.0);
+  outColor = vec4(sum / total, 0.0, 1.0);
 }`
 
 // The remembered light: eases toward the current light, slowly while light is
@@ -193,9 +195,11 @@ void main() {
   vec2 centre = (cell + 0.5) * uCell - uGridOffset;
   vec2 f = centre * uFieldScale + uFieldOffset;
   vec2 fuv = vec2(f.x, 1.0 - f.y);
-  float light = texture(uField, fuv).r;
+  vec2 field = texture(uField, fuv).rg; // flowing light, mouse light
+  float light = field.r;
   float memory = texture(uMemory, fuv).r;
   float shown = light * (1.0 - FADE * smoothstep(MEM_LO, MEM_HI, memory));
+  shown = min(1.0, shown + field.g);
 
   float level = clamp((shown - LO) / (HI - LO), 0.0, 1.0);
   level = pow(level, GAMMA) + (hash(cell) - 0.5) * DITHER;
@@ -252,13 +256,14 @@ const MASK_PAD_X = 6 // px of clearance around each readable box
 const MASK_PAD_Y = 3
 const MASK_FEATHER = 1.5 // cells over which the cap eases off
 
+// The mouse's light lives on a coarse grid over the field.
 const GRID_W = 64
 const GRID_H = 40
-const RADIUS = 0.14 // size of the mouse's push, as a fraction of screen height
-const GLIDE = 0.975 // how long pushed light keeps travelling after the mouse stops
-const PUSH = 2.8 * (1 - GLIDE) // total travel is about 2.8x the mouse's movement
-const SPREAD = 0.01 // how much a push slowly spreads into its surroundings
-const LIMIT = 6 // cap on how far any spot can be pushed in total
+const BRUSH = 0.055 // radius of the light the mouse lays down, as a fraction of screen height
+const GAIN = 7 // how much light per distance moved
+const GLOW_MAX = 1 // the most light the mouse can pile onto one spot
+const GLOW_FADE_S = 2.5 // how long the trail takes to fade (to about a third)
+const GLOW_SPREAD = 0.08 // how fast the trail softens into its surroundings
 const FADE_IN_MS = 12000 // black at first, then the glyphs fade in over this long
 
 function compile(gl: WebGL2RenderingContext, type: number, src: string) {
@@ -400,10 +405,10 @@ function Background() {
     const triangle = () => gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1)
 
-    // Texture units: 0 mouse push, 1 light, 2 glyph atlas, 3 memory, 4 text mask.
+    // Texture units: 0 mouse light, 1 light, 2 glyph atlas, 3 memory, 4 text mask.
     const loc = (p: WebGLProgram, name: string) => gl.getUniformLocation(p, name)
     gl.useProgram(fieldProg)
-    gl.uniform1i(loc(fieldProg, 'uDisp'), 0)
+    gl.uniform1i(loc(fieldProg, 'uGlow'), 0)
     const uAspect = loc(fieldProg, 'uAspect')
     const uTime = loc(fieldProg, 'uTime')
     gl.useProgram(blurProg)
@@ -434,17 +439,15 @@ function Background() {
       gl.bindTexture(gl.TEXTURE_2D, tex)
     }
 
-    // Mouse push: velocity and offset per grid cell (x, y pairs, GL coords).
-    const size = GRID_W * GRID_H * 2
-    const vel = new Float32Array(size)
-    const disp = new Float32Array(size)
-    const tmp = new Float32Array(size)
+    // Mouse light: how much light the mouse has added to each grid cell.
+    const glow = new Float32Array(GRID_W * GRID_H)
+    const tmp = new Float32Array(GRID_W * GRID_H)
 
-    const dispTex = createTexture(gl, gl.LINEAR)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG16F, GRID_W, GRID_H, 0, gl.RG, gl.FLOAT, disp)
+    const glowTex = createTexture(gl, gl.LINEAR)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, GRID_W, GRID_H, 0, gl.RED, gl.FLOAT, glow)
     const upload = () => {
-      bindTex(SCRATCH_UNIT, dispTex)
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, GRID_W, GRID_H, gl.RG, gl.FLOAT, disp)
+      bindTex(SCRATCH_UNIT, glowTex)
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, GRID_W, GRID_H, gl.RED, gl.FLOAT, glow)
     }
 
     const atlasTex = createTexture(gl, gl.NEAREST)
@@ -633,7 +636,7 @@ function Background() {
     // dt: seconds since the last frame (Infinity snaps the memory to the light).
     const render = (seconds: number, reveal: number, dt: number) => {
       if (!ready || !fieldA || !fieldB || !memory || !memoryNext) return
-      bindTex(0, dispTex)
+      bindTex(0, glowTex)
       bindTex(1, null)
       bindTex(2, atlasTex)
       bindTex(3, null)
@@ -733,64 +736,50 @@ function Background() {
 
     const fieldAspect = () => (window.innerWidth + BLEED * 2) / (window.innerHeight + BLEED * 2)
 
-    const splat = (x: number, y: number, dx: number, dy: number) => {
+    // Adds a soft dab of light centred on (x, y), in field coordinates.
+    const splat = (x: number, y: number, amount: number) => {
       const aspect = fieldAspect()
-      const r2 = RADIUS * RADIUS
+      const r2 = BRUSH * BRUSH
       for (let j = 0; j < GRID_H; j++) {
         const cy = (j + 0.5) / GRID_H - y
         for (let i = 0; i < GRID_W; i++) {
           const cx = ((i + 0.5) / GRID_W - x) * aspect
           const d2 = cx * cx + cy * cy
           if (d2 > r2 * 9) continue
-          const w = Math.exp(-d2 / r2) * PUSH
-          const k = (j * GRID_W + i) * 2
-          vel[k] += dx * w
-          vel[k + 1] += dy * w
+          const k = j * GRID_W + i
+          glow[k] = Math.min(GLOW_MAX, glow[k] + amount * Math.exp(-d2 / r2))
         }
       }
       awake = true
     }
 
-    // Each frame: the push spreads to neighbouring cells and fades, moves the
-    // pattern, and the pattern eases back to rest.
-    const blurInto = (src: Float32Array, k: number, i: number, j: number, c: number) => {
-      const l = i > 0 ? k - 2 : k
-      const r = i < GRID_W - 1 ? k + 2 : k
-      const d = j > 0 ? k - GRID_W * 2 : k
-      const u = j < GRID_H - 1 ? k + GRID_W * 2 : k
-      return (src[l + c] + src[r + c] + src[d + c] + src[u + c]) * 0.25
-    }
-
-    const step = () => {
+    // Each frame the added light softens into its neighbours and fades.
+    const step = (dt: number) => {
+      const keep = Math.exp(-dt / GLOW_FADE_S)
+      const spread = Math.min(1, GLOW_SPREAD * dt * 60)
       let peak = 0
       for (let j = 0; j < GRID_H; j++) {
         for (let i = 0; i < GRID_W; i++) {
-          const k = (j * GRID_W + i) * 2
-          for (let c = 0; c < 2; c++) {
-            tmp[k + c] = (vel[k + c] * 0.6 + blurInto(vel, k, i, j, c) * 0.4) * GLIDE
-          }
+          const k = j * GRID_W + i
+          const l = i > 0 ? k - 1 : k
+          const r = i < GRID_W - 1 ? k + 1 : k
+          const d = j > 0 ? k - GRID_W : k
+          const u = j < GRID_H - 1 ? k + GRID_W : k
+          const around = (glow[l] + glow[r] + glow[d] + glow[u]) * 0.25
+          tmp[k] = (glow[k] * (1 - spread) + around * spread) * keep
+          peak = Math.max(peak, tmp[k])
         }
       }
-      vel.set(tmp)
-      for (let j = 0; j < GRID_H; j++) {
-        for (let i = 0; i < GRID_W; i++) {
-          const k = (j * GRID_W + i) * 2
-          for (let c = 0; c < 2; c++) {
-            // Pushed light stays where it lands (no pull back to the start).
-            const next = disp[k + c] * (1 - SPREAD) + blurInto(disp, k, i, j, c) * SPREAD + vel[k + c]
-            tmp[k + c] = Math.max(-LIMIT, Math.min(LIMIT, next))
-            peak = Math.max(peak, Math.abs(vel[k + c]))
-          }
-        }
-      }
-      disp.set(tmp)
-      // Once the push has stopped travelling, rest until the mouse moves again.
-      if (peak < 1e-5) {
-        vel.fill(0)
+      glow.set(tmp)
+      // Once it has all faded, rest until the mouse moves again.
+      if (peak < 1e-3) {
+        glow.fill(0)
         awake = false
       }
     }
 
+    // Moving the mouse lays light along its path: the further it moves, the
+    // more light. Holding still adds nothing.
     let last: { x: number; y: number } | null = null
     const onMove = (e: PointerEvent) => {
       const x = (e.clientX + BLEED) / (window.innerWidth + BLEED * 2)
@@ -798,10 +787,10 @@ function Background() {
       if (last) {
         const dx = x - last.x
         const dy = y - last.y
-        const aspect = fieldAspect()
-        const steps = Math.max(1, Math.ceil(Math.hypot(dx * aspect, dy) / (RADIUS * 0.5)))
+        const dist = Math.hypot(dx * fieldAspect(), dy)
+        const steps = Math.max(1, Math.ceil(dist / (BRUSH * 0.5)))
         for (let s = 1; s <= steps; s++) {
-          splat(last.x + (dx * s) / steps, last.y + (dy * s) / steps, dx / steps, dy / steps)
+          splat(last.x + (dx * s) / steps, last.y + (dy * s) / steps, (dist * GAIN) / steps)
         }
       }
       last = { x, y }
@@ -813,15 +802,15 @@ function Background() {
     let raf = 0
     let prev = 0
     const frame = (now: number) => {
+      // A long gap (e.g. a background tab) counts as a short one, so nothing
+      // jumps.
+      const dt = Math.min(0.1, Math.max(0, (now - prev) / 1000))
+      prev = now
       if (awake) {
-        step()
+        step(dt)
         upload()
       }
       updateMask()
-      // A long gap (e.g. a background tab) counts as a short one, so the
-      // memory doesn't jump.
-      const dt = Math.min(0.1, Math.max(0, (now - prev) / 1000))
-      prev = now
       render(now / 1000, Math.min(1, (now - start) / FADE_IN_MS), dt)
       raf = requestAnimationFrame(frame)
     }
